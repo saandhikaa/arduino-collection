@@ -1,6 +1,6 @@
 const int PushPin = 2;      // Push Button Pin
 const int PushState = 0;    // Push Button Active Low = 0, Active High = 1
-const int PushLong = 3000;  // Long pressed timer = 3 sec.
+const int PushLong = 3000;  // Long press timer = 3 sec.
 
 void setup() {
   pinMode(PushPin,INPUT);  
