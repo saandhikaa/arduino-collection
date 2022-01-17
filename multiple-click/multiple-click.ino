@@ -23,14 +23,14 @@ void loop() {
 }
 
 
-int ButtonMultiClick(int PushPin){
+int ButtonMultiClick(int Button){
   int result = 0;
   boolean multiple = true;
   
-  if (digitalRead(PushPin) == PushState){
+  if (digitalRead(Button) == PushState){
     result = 1;
     long waits = millis() + PushLong;
-    while (abs(1-PushState-digitalRead(PushPin))){
+    while (abs(1-PushState-digitalRead(Button))){
       if (millis() > waits){
         Serial.print("> ");
         result = PushLong;
@@ -38,14 +38,14 @@ int ButtonMultiClick(int PushPin){
         break;
       }
     }
-    while (abs(1-PushState-digitalRead(PushPin)));
+    while (abs(1-PushState-digitalRead(Button)));
     delay(100);
     
     for (int s = 1;multiple;s++){
       waits = millis() + 1000;
       while (millis() <= waits){
-        if (digitalRead(PushPin) == PushState){
-          while (abs(1-PushState-digitalRead(PushPin)));
+        if (digitalRead(Button) == PushState){
+          while (abs(1-PushState-digitalRead(Button)));
           delay(100);
           result++;
           break;
