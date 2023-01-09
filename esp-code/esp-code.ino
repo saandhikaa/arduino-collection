@@ -49,7 +49,7 @@ void receiving(){
     if (splitting(data, ',', 0) == "WATEROUT") Blynk.virtualWrite(V4, splitting(data, ',', 1).toInt()); else
     if (splitting(data, ',', 0) == "WLEVEL")   Blynk.virtualWrite(V6, splitting(data, ',', 1).toFloat()); else
     if (splitting(data, ',', 0) == "WTEMPR")   Blynk.virtualWrite(V7, splitting(data, ',', 1).toFloat()); else
-    if (splitting(data, ',', 0) == "FTIME1")   Blynk.virtualWrite(V8, splitting(data, ',', 1)); else
+    if (splitting(data, ',', 0) == "FTIME1"){  Blynk.virtualWrite(V8, splitting(data, ',', 1)); if (splitting(data, ',', 1) == "-") Blynk.virtualWrite(V10,0);} else
     if (splitting(data, ',', 0) == "FTIME2")   Blynk.virtualWrite(V9, splitting(data, ',', 1)); else
     if (splitting(data, ',', 0) == "FTODAY")   Blynk.virtualWrite(V10,splitting(data, ',', 1).toInt());
   }
