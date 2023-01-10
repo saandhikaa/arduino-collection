@@ -2,6 +2,10 @@
   // NOTE:  addr 0    : last active date
   //        addr 1    : last active month
   //        addr 2    : last active year[2]
+  //        addr 70   : temperature limit min
+  //        addr 71   : temperature limit max
+  //        addr 90   : day time start (LED)
+  //        addr 91   : day time end (LED)
   //        addr 100  : total feed today
   //        addr 101  : feed at 08.00
   //        addr 102  : feed at 20.00
@@ -16,8 +20,8 @@
   #define ONE_WIRE_BUS 10
   OneWire oneWire(ONE_WIRE_BUS);
   DallasTemperature stempr(&oneWire);
-  #define wtemprmin 30
-  #define wtemprmax 32
+  #define wtemprmin EEPROM.read(70)
+  #define wtemprmax EEPROM.read(71)
   
 #include <SoftwareSerial.h>
   SoftwareSerial esp(2,3);
@@ -225,17 +229,123 @@ int button(){
   if (result[0]) Serial.println("Tombol: " + String(result[0]));
 
   if (!manual){
+    ////________________________________________________________________ button 1 pressed
     if (result[0] == 1) {
       lstatus++;
       if (lstatus >= ndisplay) lstatus = 0;
     }
+    ////_____________________________________ button 2 pressed on relay and feeder status
     else if (result[0] == 2 && lstatus >= 3 && lstatus <= 9){
       manual = true;
       control_manual(lstatus);
     }
-  }
-  else 
-    return result[0];
+    ////_________________________________________________ button 2 pressed on time status
+    else if (result[0] == 2 && lstatus == 0){
+      manual = true;
+      int s = 1,b;
+      lcd.clear();
+      lcd.setCursor(0,0); lcd.print("Set Limit");
+      lcd.setCursor(0,1); lcd.print("Temperature");
+
+      while (1){
+        b = button();
+        if (b == 1 && s == 1){
+          lcd.setCursor(0,1); lcd.print("Day Time");
+          s++;
+        }
+        // add new set up here
+        if (b == 1 && s == 2){
+          lcd.setCursor(0,1); lcd.print("Temperature");
+          s = 1;
+        }
+        if (b == 2) break;
+        delay(200);
+      }
+      
+      ////______________________________________________________ set up temperature limit
+      if (s == 1){
+        //_____________________________ set min
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("T. Limit Min");
+        while (1){
+          lcd.setCursor(0,1); lcd.print(String(wtemprmin) + ".0 C  ");
+          b = button();
+          if (b == 1){
+            s = wtemprmin+1;
+            if (s > 35) s = 20;
+            EEPROM.write(70,s);
+          }
+          else if (b == 2) break;
+          delay(200);
+        }
+        
+        //_____________________________ set max
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("T. Limit Max");
+        while (1){
+          lcd.setCursor(0,1); lcd.print(String(wtemprmax) + ".0 C  ");
+          b = button();
+          if (b == 1){
+            int s = wtemprmax+1;
+            if (s > 35) s = 20;
+            if (s < wtemprmin) EEPROM.write(71,wtemprmin+1);
+            EEPROM.write(71,s);
+          }
+          else if (b == 2) break;
+          delay(200);
+        }
+        lcd.clear();
+        lcd.print("Saved!");
+        manual = false;
+        delay(2000);
+      }
+      
+      ////_______________________________________________________________ set up day time
+      else if (s == 2){
+        //_____________________________ set min
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Day Time Start");
+        while (1){
+          lcd.setCursor(0,1); lcd.print(String(EEPROM.read(90)) + ":00  ");
+          b = button();
+          if (b == 1){
+            s = EEPROM.read(90)+1;
+            if (s > 23) s = 0;
+            EEPROM.write(90,s);
+          }
+          else if (b == 2) break;
+          delay(200);
+        }
+        
+        //_____________________________ set max
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Day Time End");
+        while (1){
+          lcd.setCursor(0,1); lcd.print(String(EEPROM.read(91)) + ":00  ");
+          b = button();
+          if (b == 1){
+            s = EEPROM.read(91)+1;
+            if (s > 23) s = 0;
+            if (s < EEPROM.read(90)) EEPROM.write(91,EEPROM.read(90)+1);
+            EEPROM.write(91,s);
+          }
+          else if (b == 2) break;
+          delay(200);
+        }
+        lcd.clear();
+        lcd.print("Saved!");
+        manual = false;
+        delay(2000);
+      }
+      
+      // add new set up here
+      
+    }
+  } else return result[0]; // if manual
 }
 
 void control_manual(int value){
@@ -336,12 +446,14 @@ void automatic(){
   }
   
   ////_______________________________________________________________________________ LED
-  if (t.hour >= 8 && t.hour < 20){
+  if (t.hour >= EEPROM.read(90) && t.hour < EEPROM.read(91)){
     if (!rstatus[2]){
+      Serial.println("\nWaktu siang : " + String(rtc.getTimeStr()));
       relay(2,1);
       esp.print("LED," + String(rstatus[2]) + ",M"); delay(100);
     }
   }else if (rstatus[2]){
+    Serial.println("\nWaktu malam : " + String(rtc.getTimeStr()));
     relay(2,0);
     esp.print("LED," + String(rstatus[2]) + ",M"); delay(100);
   }
